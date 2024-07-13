@@ -1,0 +1,10 @@
+"0","with ZipFile(file_name, 'r') as zip: 
+    # printing all the contents of the zip file 
+    zip.printdir()
+
+"
+"1","File Name                                             Modified             Size
+sample_submission.csv                          2023-12-31 21:34:52      1210263
+test.csv                                       2023-12-31 21:34:52      8086863
+train.csv                                      2023-12-31 21:34:52     12350130
+"

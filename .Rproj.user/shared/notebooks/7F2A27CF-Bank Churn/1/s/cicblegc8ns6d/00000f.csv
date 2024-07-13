@@ -1,0 +1,6 @@
+"0","reticulate::repl_python()
+train.drop([""id"",""CustomerId"",""Surname""], inplace = True)
+"
+"2","KeyError: ""['id', 'CustomerId', 'Surname'] not found in axis""
+"
+"0",""

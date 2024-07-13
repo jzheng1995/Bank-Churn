@@ -1,0 +1,98 @@
+---
+title: "Bank Churn Analysis"
+author: "Jason"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+# Set up
+```{python}
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import pandas as pd
+import numpy as np
+import seaborn as sns
+import zipfile 
+from zipfile import ZipFile 
+
+
+
+# opening the zip file in READ mode 
+file_name = "playground-series-s4e1.zip"
+with ZipFile(file_name, 'r') as zip: 
+    # printing all the contents of the zip file 
+    zip.printdir()
+    
+    
+# import
+df_zip = zipfile.ZipFile(file_name)
+train = pd.read_csv(df_zip.open('train.csv'))
+test = pd.read_csv(df_zip.open('test.csv'))
+sample_submission = pd.read_csv(df_zip.open('sample_submission.csv')) 
+```
+
+```{r,warning = FALSE, message = FALSE}
+library(reticulate)
+library(tidyverse)
+library(kableExtra)
+# tabulate python tables
+pytable <- function(object, row = 0){
+  if(row == 0){
+    py[object] %>% kbl() %>%
+  kable_material_dark()
+  } else {
+    py[object] %>% head(row) %>% kbl() %>%
+  kable_material_dark()
+  }}
+
+```
+
+# EDA
+```{r}
+train = py$train
+train %>% glimpse()
+```
+
+Column names
+```{r}
+train %>% colnames()
+```
+Summary statistics
+```{r}
+library(psych)
+train %>% describe()
+```
+
+
+## CustomerId
+
+Examining rows per CustomerId to check data row independence.
+```{r}
+(entries_per_customer <- train %>% group_by(CustomerId) %>% tally())
+```
+
+
+```{r, message = F}
+(entries_per_customer %>% group_by(n) %>% tally())
+```
+```{r}
+n_4 <- entries_per_customer %>% filter(n == 4)
+train %>% filter(CustomerId %in% n_4$CustomerId) %>% arrange(CustomerId)
+```
+
+Based on this cursory exploration of CustomerId, it's safe to say this feature doesn't make much sense. As it turns out, this is a synthetic dataset so it's not surprising CustomerId, and likely id and Surname, are probably nonsense. We examined this because we're afraid of non-independence of data instances but it looks like we'll ignore this problem in synthetic datasets. 
+
+## naive prediction
+```{python}
+# drop id columns
+train.drop(["id","CustomerId","Surname"],axis = 1, inplace = True)
+# features
+x_train = train.drop(["Exited"], axis = 1)
+# label
+y_train = train["Exited"]
+```
+
+```{r}
+
+```
+
