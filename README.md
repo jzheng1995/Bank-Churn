@@ -21,11 +21,11 @@ Account information (account balance, tenure, credit score, etc.)
 
 We evaluated the performance of the following models in predicting bank churn using Python and the scikit-learn machine learning framework:
 
--Logistic Classifier
--Random Forest Classifier
--XGBoost 
--Light GBM
--Voting Classifier
+- Logistic Classifier
+- Random Forest Classifier
+- XGBoost 
+- Light GBM
+- Voting Classifier
 
 ## Results
 
