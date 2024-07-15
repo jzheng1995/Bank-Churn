@@ -14,8 +14,8 @@ The main objective of this project is to develop a predictive model that can cla
 
 The dataset used in this project belongs to the [Kaggle Playground Series](https://www.kaggle.com/competitions/playground-series-s4e1/overview). The data includes various features that might influence a customer's decision to stay or leave, such as:
 
-Customer demographics (age, gender, location, etc.)
-Account information (account balance, tenure, credit score, etc.)
+- Customer demographics (age, gender, location, etc.)
+- Account information (account balance, tenure, credit score, etc.)
 
 ## Methods
 
