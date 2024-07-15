@@ -57,8 +57,9 @@ Column names
 ```{r}
 train %>% colnames()
 ```
+
 Summary statistics
-```{r}
+```{r, message = False, warning = False}
 library(psych)
 train %>% describe()
 ```
@@ -77,22 +78,216 @@ Examining rows per CustomerId to check data row independence.
 ```
 ```{r}
 n_4 <- entries_per_customer %>% filter(n == 4)
-train %>% filter(CustomerId %in% n_4$CustomerId) %>% arrange(CustomerId)
+train %>% filter(CustomerId %in% n_4$CustomerId) %>% arrange(CustomerId) %>% head()
 ```
 
 Based on this cursory exploration of CustomerId, it's safe to say this feature doesn't make much sense. As it turns out, this is a synthetic dataset so it's not surprising CustomerId, and likely id and Surname, are probably nonsense. We examined this because we're afraid of non-independence of data instances but it looks like we'll ignore this problem in synthetic datasets. 
 
-## naive prediction
+## Train info
 ```{python}
+train.info()
+```
+
+## x, y split
+
+```{python}
+from sklearn.model_selection import train_test_split
 # drop id columns
 train.drop(["id","CustomerId","Surname"],axis = 1, inplace = True)
 # features
 x_train = train.drop(["Exited"], axis = 1)
 # label
-y_train = train["Exited"]
+y_train = train.Exited
+
+X_data, X_valid, y_data,y_valid =  train_test_split(x_train, y_train, test_size=0.33,  random_state=42, stratify = y_train)
 ```
 
+## y - Exited
+
+```{python}
+y_train.value_counts()
+fig_exit = sns.barplot(x = y_train.value_counts().index, y = y_train.value_counts().values)
+plt.show()
+```
+
+### violin 
+```{python}
+data_dia = y_train
+data_num = x_train.select_dtypes(include = "number")
+data_n_2 = (data_num - data_num.mean()) / (data_num.std())              # standardization
+data = pd.concat([y_train,data_n_2.iloc[:,0:10]],axis=1)
+data = pd.melt(data,id_vars="Exited",
+                    var_name="features",
+                    value_name='value')
+plt.figure(figsize=(10,10))
+sns.violinplot(x="features", y="value", hue="Exited", data=data,split=True, inner="quart")
+plt.xticks(rotation=90)
+plt.show()
+```
+
+### heat map
+
+```{python}
+#correlation map
+f,ax = plt.subplots(figsize=(18, 18))
+sns.heatmap(data_num.corr(), annot=True, linewidths=.5, fmt= '.1f',ax=ax)
+# This sets the yticks "upright" with 0, as opposed to sideways with 90.
+plt.yticks(rotation=0) 
+plt.xticks(rotation=90)
+plt.show()
+```
+
+# Preprocess pipeline
+```{python}
+from sklearn.pipeline import Pipeline
+from sklearn.compose import ColumnTransformer, make_column_selector
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import FunctionTransformer
+from sklearn.impute import SimpleImputer
+
+cat_col = x_train.select_dtypes("object").columns
+num_col = x_train.select_dtypes("number").columns
+
+# numerical transformer
+num_pipe = Pipeline(steps=[
+    ("standardize", StandardScaler())
+])
+# categorical transformer
+cat_pipe = Pipeline(steps=[
+    ("ohe", OneHotEncoder(handle_unknown="ignore"))
+])
+
+preprocess = ColumnTransformer(
+    transformers=[
+        ("numerical", num_pipe, num_col),
+        ("categorical", cat_pipe, cat_col),
+    ],
+    remainder = "passthrough"
+)
+```
+
+# Model fit and evaluation
+
+## Models
+```{python}
+import xgboost
+import lightgbm
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from xgboost import XGBClassifier
+from lightgbm import LGBMClassifier
+
+lor = LogisticRegression()
+xgb = XGBClassifier()
+rf = RandomForestClassifier()
+lgbm = LGBMClassifier()
+
+clfs = {
+     'lor':lor,
+     'rf':rf,
+     'xgb':xgb,
+     'lgbm':lgbm
+     
+}
+```
+
+## train function
+
+```{python}
+from sklearn.metrics import precision_score,accuracy_score,recall_score,f1_score
+
+def Train_Model(clf,x_train,y_train,x_test,y_test):
+     
+     pipeline = Pipeline(steps=[
+          ('column_tran',preprocess),
+          ('model',clf)
+     ])
+
+     pipeline.fit(x_train,y_train)
+     y_pred = pipeline.predict(x_test)
+     acc = accuracy_score(y_test,y_pred)
+     ps = precision_score(y_test,y_pred)
+     rec = recall_score(y_test,y_pred)
+     f1 = f1_score(y_test,y_pred)
+     return acc , ps ,rec, f1
+```
+
+## Fit
+
+```{python}
+acc_score = []
+pre_score = []
+recall = []
+f1s = []
+
+for key,value in clfs.items():
+     acc , ps,rs,f1 = Train_Model(value,X_data,y_data,X_valid,y_valid)
+
+     print("name:",key)
+     print('ac:',acc)
+     print('ps :',ps)
+     print('rs:',rs)
+     print('f1:',f1)
+     
+     acc_score.append(acc)
+     pre_score.append(ps)
+     recall.append(rs)
+     f1s.append(f1)
+```
+
+## Compare metrics
+
+```{python}
+model_df = pd.DataFrame({'Algoritham':clfs.keys(),'Accuracy Score':acc_score,'Precision Score':pre_score,'Recall Score':recall,'F1 Score':f1s}).sort_values('Accuracy Score',ascending=False)
+```
 ```{r}
-
+"model_df" %>% pytable()
 ```
+
+## Voting classifier
+
+```{python}
+from sklearn.ensemble import VotingClassifier
+
+vote = VotingClassifier(estimators=[
+     ('xgb',xgb),
+     ('random forest',rf),
+     ('lgbm',lgbm)], voting = 'soft')
+
+vote_pipeline = Pipeline(steps=[
+     ('colums_tran',preprocess),
+     ('model',vote)
+])
+
+vote_pipeline.fit(x_train,y_train)
+```
+
+Save model object
+```{r, eval = FALSE}
+import joblib
+joblib.dump(vote_pipeline, 'vote_classifier', compress=9)
+```
+# Predict - submission
+
+Check labels
+```{python}
+# labels
+vote_pipeline.classes_
+```
+
+Create and save submission dataframe
+```{python}
+# prediction array
+y_test = vote_pipeline.predict_proba(test)
+
+# submission df
+my_submission = pd.DataFrame({'id': test["id"] , 'Exited': y_test[:,1]})
+
+# save
+my_submission.to_csv('submission.csv', index=False)
+```
+
+
+
 
