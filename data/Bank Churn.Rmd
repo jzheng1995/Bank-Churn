@@ -2,8 +2,26 @@
 title: "Bank Churn Analysis"
 author: "Jason"
 date: "`r Sys.Date()`"
-output: html_document
+output: 
+  html_document:
+    keep_md: true
 ---
+```{r,warning = FALSE, message = FALSE}
+library(reticulate)
+library(tidyverse)
+library(kableExtra)
+
+
+# tabulate python tables
+pytable <- function(object, row = 0){
+  if(row == 0){
+    py[object] %>% kbl() %>%
+  kable_material_dark()
+  } else {
+    py[object] %>% head(row) %>% kbl() %>%
+  kable_material_dark()
+  }}
+```
 
 # Set up
 ```{python}
@@ -31,21 +49,6 @@ test = pd.read_csv(df_zip.open('test.csv'))
 sample_submission = pd.read_csv(df_zip.open('sample_submission.csv')) 
 ```
 
-```{r,warning = FALSE, message = FALSE}
-library(reticulate)
-library(tidyverse)
-library(kableExtra)
-# tabulate python tables
-pytable <- function(object, row = 0){
-  if(row == 0){
-    py[object] %>% kbl() %>%
-  kable_material_dark()
-  } else {
-    py[object] %>% head(row) %>% kbl() %>%
-  kable_material_dark()
-  }}
-
-```
 
 # EDA
 ```{r}
@@ -59,7 +62,7 @@ train %>% colnames()
 ```
 
 Summary statistics
-```{r, message = False, warning = False}
+```{r, message = FALSE, warning = FALSE}
 library(psych)
 train %>% describe()
 ```
