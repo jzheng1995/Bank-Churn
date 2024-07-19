@@ -2,7 +2,7 @@
 
 ## Project description
 
-Welcome to the Customer Churn Prediction project! This repository contains the code, data, and documentation for a machine learning analysis aimed at predicting whether a customer will continue with their account or close it (i.e., churn). Accurately predicting customer churn is crucial for businesses to retain their customers and improve their overall performance.
+Welcome to the Customer Churn Prediction project! This repository contains the code, data, and documentation for a machine learning analysis aimed at predicting whether a customer will continue with their account or close it (i.e., churn). Accurately predicting customer churn is crucial for businesses to retain their customers and improve their overall performance. Details for this analyses is found in [this notebook](data/Bank-Churn.md)
 
 ## Objective
 
